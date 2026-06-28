@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>まちのいま｜今だけの地図</title>
+<link rel="stylesheet" href="leaflet/leaflet.css"/>
+<script src="leaflet/leaflet.js"></script>
+<script>
+if (typeof L === 'undefined') {
+  document.write('<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>');
+  document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>');
+}
+</script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; color: #222; }
+#header { background: #1E7A6B; color: #fff; padding: 10px 16px; }
+#header h1 { font-size: 16px; font-weight: 700; }
+#header .sub { font-size: 11px; opacity: .9; }
+#toolbar { display: flex; gap: 8px; align-items: center; padding: 8px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
+#post-fab { background: #1E7A6B; color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
+#back-toggle { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 8px 11px; font-size: 13px; cursor: pointer; color: #555; }
+#back-toggle.on { background: #fff3e0; border-color: #f0a030; color: #8a5a12; }
+#time-wrap { display: none; align-items: center; gap: 8px; width: 100%; padding-top: 4px; }
+#time-wrap.on { display: flex; }
+#time-slider { flex: 1; }
+#time-label { font-size: 12px; color: #8a5a12; font-weight: 700; min-width: 86px; text-align: right; }
+#map-hint { background: #e7f4f1; border-bottom: 2px solid #8fcabd; padding: 9px 16px; font-size: 13px; font-weight: 700; color: #155c50; text-align: center; }
+#map-wrap { position: relative; }
+#map { width: 100%; height: 56vh; min-height: 320px; }
+#crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-100%); font-size: 30px; z-index: 800; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); display: none; }
+#center-dot { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #1E7A6B; border: 2px solid #fff; z-index: 800; pointer-events: none; display: none; }
+#locate-btn { position: absolute; bottom: 24px; right: 12px; z-index: 1000; width: 40px; height: 40px; background: #fff; border: 2px solid #bbb; border-radius: 10px; font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+#panel { background: #fff; padding: 14px 16px; border-top: 3px solid #1E7A6B; display: none; }
+#panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.pin-coords { font-size: 12px; color: #155c50; margin-bottom: 10px; background: #e7f4f1; padding: 6px 10px; border-radius: 6px; font-weight: 600; }
+.cats { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 12px; }
+.cat { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 3px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer; font-size: 11px; color: #666; user-select: none; }
+.cat .e { font-size: 21px; line-height: 1.1; }
+.cat .def { font-size: 10px; color: #aaa; }
+.cat.sel { border-color: #1E7A6B; background: #e7f4f1; color: #155c50; font-weight: 700; }
+.cat.sel .def { color: #2a8b78; }
+.form-row { margin-bottom: 10px; }
+.form-row label { display: block; font-size: 12px; color: #555; margin-bottom: 5px; font-weight: 600; }
+.form-row input { width: 100%; padding: 9px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+.durs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.dur { padding: 6px 11px; border: 1.5px solid #e0e0e0; border-radius: 16px; font-size: 12px; color: #666; cursor: pointer; background: #fff; user-select: none; }
+.dur.sel { border-color: #1E7A6B; background: #e7f4f1; color: #155c50; font-weight: 700; }
+.btn-row { display: flex; gap: 8px; margin-top: 4px; }
+#submit-btn { flex: 3; padding: 12px; background: #1E7A6B; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+#cancel-btn { flex: 1; padding: 12px; background: #fff; color: #888; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; }
+#status-list { padding: 10px 16px 24px; background: #fafafa; }
+#status-list h2 { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px; }
+.item { background: #fff; border-radius: 8px; padding: 9px 12px; margin-bottom: 6px; border-left: 4px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.item.past { opacity: .6; }
+.item .row1 { display: flex; align-items: center; gap: 6px; }
+.item .catname { font-size: 13px; font-weight: 700; }
+.item .when { margin-left: auto; font-size: 11px; color: #999; white-space: nowrap; }
+.item .note { font-size: 13px; color: #444; margin: 3px 0 7px; }
+.item .acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.item .acts button { font-size: 11px; padding: 5px 9px; border-radius: 6px; border: 1px solid #ddd; background: #fff; cursor: pointer; color: #555; }
+.item .acts .still { border-color: #1E7A6B; color: #155c50; font-weight: 700; }
+.item .acts .rm { border-color: #e07070; color: #c0392b; }
+.life { font-size: 11px; color: #999; margin-left: auto; }
+.pinmark { display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); font-size: 16px; }
+.leaflet-popup-content { min-width: 180px; }
+.pop .t { font-weight: 700; font-size: 14px; }
+.pop .n { font-size: 13px; color: #444; margin: 4px 0; }
+.pop .a { font-size: 11px; color: #999; margin: 4px 0 8px; }
+.pop .b { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pop .b button { font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+.pop .b .still { border-color: #1E7A6B; color: #155c50; font-weight: 700; }
+.pop select { font-size: 12px; padding: 5px; border-radius: 6px; border: 1px solid #ddd; }
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; display: none; z-index: 9999; }
+#demo-note { font-size: 11px; color: #8a5a12; background: #faefd8; border: 1px solid #ead9b0; border-radius: 8px; padding: 6px 10px; margin: 8px 16px 0; display: none; }
+#nickname-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2000; display: none; align-items: center; justify-content: center; }
+#nickname-box { background: #fff; border-radius: 12px; padding: 22px 20px; width: 300px; max-width: 90vw; }
+#nickname-box h2 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+#nickname-box p { font-size: 12px; color: #888; margin-bottom: 14px; line-height: 1.6; }
+#nickname-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; margin-bottom: 12px; }
+#nickname-save { width: 100%; padding: 11px; background: #1E7A6B; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- 後で有効化：ニックネーム/Google認証（今は REQUIRE_NICKNAME=false なので非表示） -->
+<div id="nickname-modal">
+  <div id="nickname-box">
+    <h2>📛 お名前（任意）</h2>
+    <p>情報の信頼性のため、ニックネームを登録できます。匿名OK・本名不要。荒らし対策が必要になったら、ここをGoogleログイン必須に切り替えます。</p>
+    <input type="text" id="nickname-input" placeholder="例：なごっち" maxlength="20">
+    <button id="nickname-save" onclick="saveNickname()">決定</button>
+  </div>
+</div>
+
+<div id="header">
+  <h1>📍 まちのいま</h1>
+  <div class="sub">今この瞬間だけの地図。古い情報は自然に消えます。</div>
+</div>
+
+<div id="toolbar">
+  <button id="post-fab" onclick="openPostHere()">＋ 今を投稿</button>
+  <button id="back-toggle" onclick="toggleBack()">🕒 さかのぼる</button>
+  <div id="time-wrap">
+    <input type="range" id="time-slider" min="0" max="1440" step="10" value="0" oninput="onSlider()">
+    <span id="time-label">いま（ライブ）</span>
+  </div>
+</div>
+
+<div id="demo-note">デモ表示中（保存されません）。本番化は、コード冒頭の <b>GAS_URL</b> にGASのURLを入れてください。</div>
+<div id="map-hint">ピンをタップで詳細　／　「＋今を投稿」で今を知らせる</div>
+
+<div id="map-wrap">
+  <div id="map"></div>
+  <div id="crosshair">📍</div>
+  <div id="center-dot"></div>
+  <button id="locate-btn" onclick="locateMe(true)" title="現在地へ">📍</button>
+</div>
+
+<div id="panel">
+  <h2>📍 今を投稿する</h2>
+  <div class="pin-coords" id="pin-coords">場所：地図の中心（動かして合わせてね）</div>
+  <div class="form-row"><label>何が起きてる？</label></div>
+  <div class="cats" id="cats"></div>
+  <div class="form-row"><label>表示時間（種類で既定が入ります・変えられます）</label></div>
+  <div class="durs" id="durs"></div>
+  <div class="form-row">
+    <label>ひとこと（任意）</label>
+    <input type="text" id="note-input" placeholder="例：万座の方で打ち上げ中">
+  </div>
+  <div class="form-row" id="name-row" style="display:none">
+    <label>お名前（任意）</label>
+    <input type="text" id="name-input" placeholder="例：なごっち">
+  </div>
+  <div class="btn-row">
+    <button id="submit-btn" onclick="submitPost()">この内容で出す</button>
+    <button id="cancel-btn" onclick="cancelPost()">やめる</button>
+  </div>
+</div>
+
+<div id="status-list">
+  <h2 id="list-title">いま出ている情報</h2>
+  <div id="items"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ===== 設定 ===== */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbz9MhQzVvsET3t4GNHWRAaI3qSa9qTdnKQDvjTVrWeAx-O5lRNoh2qWJB7EyFUH16Aq/exec";              /* 本番化：GASのウェブアプリURL（/exec）を入れる */
+const REQUIRE_NICKNAME = false;  /* true でニックネーム必須（荒らし対策が要る時） */
+const GOOGLE_AUTH = false;       /* 後で Google Identity Services を有効化するフック */
+
+/* ===== 表示時間の選択肢 ===== */
+const DURS = [30,60,120,180,360,720,1440];
+function durLabel(m){ return m<60 ? m+"分" : (m/60)+"時間"; }
+const HINT_VIEW="ピンをタップで詳細　／　「＋今を投稿」で今を知らせる";
+const HINT_POST="中心の📍を場所に合わせて、種類と時間を選ぶ";
+function showCrosshair(on){var el=document.getElementById("crosshair"),dt=document.getElementById("center-dot"),h=document.getElementById("map-hint");if(el)el.style.display=on?"block":"none";if(dt)dt.style.display=on?"block":"none";if(h)h.textContent=on?HINT_POST:HINT_VIEW;}
+
+/* ===== 種類（過去ログの多い順／その他は最後）｜def=既定の表示分（DURSのどれか） ===== */
+const CATS = [
+  {key:"渋滞",        e:"🚥", color:"#E8833A", def:60},
+  {key:"安売り",      e:"🏷️", color:"#27A844", def:720},
+  {key:"新店・出店",  e:"🆕", color:"#8E44AD", def:1440},
+  {key:"停電",        e:"⚡", color:"#F4B400", def:180},
+  {key:"花火",        e:"🎆", color:"#E0457B", def:30},
+  {key:"事故",        e:"⚠️", color:"#E23B3B", def:120},
+  {key:"工事・通行止", e:"🚧", color:"#A07535", def:360},
+  {key:"落とし物・目撃",e:"🔎", color:"#1AA39A", def:720},
+  {key:"その他",      e:"💬", color:"#7A8794", def:120}
+];
+const catOf = k => CATS.find(c=>c.key===k) || CATS[CATS.length-1];
+
+/* ===== ローカル保存（端末。失敗しても動く） ===== */
+function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+let myNick=lsGet("nago_nick")||"";
+
+/* ===== 地図 ===== */
+let map=L.map("map",{zoomControl:false}).setView([26.591,127.977],14);
+L.control.zoom({position:"topleft"}).addTo(map);
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+const pinLayer=L.layerGroup().addTo(map);
+let locateMarker=null;
+
+/* ===== データ層（デモ or GAS） ===== */
+let DEMO=!GAS_URL;
+if(DEMO) document.getElementById("demo-note").style.display="block";
+let demoData=DEMO?seed():[];
+function seed(){const n=Date.now();return [
+  {id:"d1",cat:"安売り",lat:26.594,lng:127.972,note:"野菜まとめ売り、夕方まで",created:n-1800000,bump:n-1800000,dur:720,removed:false,nick:""},
+  {id:"d2",cat:"渋滞",lat:26.601,lng:127.985,note:"58号 北向き のろのろ",created:n-3000000,bump:n-3000000,dur:60,removed:false,nick:""},
+  {id:"d3",cat:"花火",lat:26.508,lng:127.853,note:"万座の方で打ち上げ中",created:n-1200000,bump:n-1200000,dur:30,removed:false,nick:""},
+  {id:"d4",cat:"停電",lat:26.616,lng:127.985,note:"このあたり停電中",created:n-2400000,bump:n-2400000,dur:180,removed:false,nick:""}
+];}
+async function api(action,data){
+  if(DEMO){
+    const f=id=>demoData.find(x=>x.id===id);
+    if(action==="list") return demoData.slice();
+    if(action==="add"){const p={id:"x"+Date.now(),cat:data.cat,lat:data.lat,lng:data.lng,note:data.note||"",created:Date.now(),bump:Date.now(),dur:data.dur,removed:false,nick:data.nick||""};demoData.push(p);return p;}
+    if(action==="bump"){const p=f(data.id);if(p)p.bump=Date.now();return{ok:true};}
+    if(action==="setdur"){const p=f(data.id);if(p)p.dur=data.dur;return{ok:true};}
+    if(action==="remove"){const p=f(data.id);if(p)p.removed=true;return{ok:true};}
+    return null;
+  }
+  const res=await fetch(GAS_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({action},data))});
+  return res.json();
+}
+
+/* ===== 時間・寿命 ===== */
+const now=()=>Date.now();
+function durOf(p){return p.dur||catOf(p.cat).def;}
+function expireAt(p){return p.bump+durOf(p)*60000;}
+function aliveAt(p,t){return !p.removed && p.created<=t && expireAt(p)>=t;}
+function freshness(p,t){const f=(expireAt(p)-t)/(durOf(p)*60000);return Math.max(.3,Math.min(1,f));}
+function ago(ms){const m=Math.floor((now()-ms)/60000);if(m<1)return"たった今";if(m<60)return m+"分前";return Math.floor(m/60)+"時間前";}
+function remainText(p){const r=Math.floor((expireAt(p)-now())/60000);if(r<=0)return"まもなく消えます";if(r<60)return"あと"+r+"分";return"あと"+Math.floor(r/60)+"時間"+(r%60?(r%60)+"分":"");}
+
+/* ===== さかのぼり ===== */
+let viewBackMin=0;
+const viewTime=()=>now()-viewBackMin*60000;
+const isLive=()=>viewBackMin===0;
+function toggleBack(){
+  const w=document.getElementById("time-wrap"),b=document.getElementById("back-toggle");
+  const on=!w.classList.contains("on");
+  w.classList.toggle("on",on);b.classList.toggle("on",on);
+  if(!on){document.getElementById("time-slider").value=0;onSlider();}
+}
+function onSlider(){
+  viewBackMin=+document.getElementById("time-slider").value;
+  document.getElementById("time-label").textContent=isLive()?"いま（ライブ）":(viewBackMin<60?viewBackMin+"分前":Math.floor(viewBackMin/60)+"時間"+(viewBackMin%60?(viewBackMin%60)+"分":"")+"前");
+  document.getElementById("post-fab").style.opacity=isLive()?1:.4;
+  document.getElementById("map-hint").textContent=isLive()?HINT_VIEW:"🕒 過去のようすを表示中（投稿はライブに戻してから）";
+  document.getElementById("list-title").textContent=isLive()?"いま出ている情報":"この時刻に出ていた情報";
+  render();
+}
+
+/* ===== 描画 ===== */
+async function render(){
+  let data;try{data=await api("list");}catch(e){return;}
+  if(!Array.isArray(data))return;
+  window._all=data;
+  const t=viewTime();
+  pinLayer.clearLayers();
+  const visible=data.filter(p=>aliveAt(p,t));
+  visible.forEach(p=>{
+    const c=catOf(p.cat),op=freshness(p,t);
+    const icon=L.divIcon({className:"",html:`<div class="pinmark" style="width:32px;height:32px;background:${c.color};opacity:${op}">${c.e}</div>`,iconSize:[32,32],iconAnchor:[16,16]});
+    const m=L.marker([p.lat,p.lng],{icon}).addTo(pinLayer);
+    m.on("click",()=>openPopup(m,p));
+  });
+  renderList(visible);
+}
+function openPopup(m,p){
+  const c=catOf(p.cat);
+  let body;
+  if(isLive()){
+    const opts=DURS.map(d=>`<option value="${d}"${d===durOf(p)?" selected":""}>${durLabel(d)}</option>`).join("");
+    body=`<div class="b"><button class="still" onclick="act('bump','${p.id}')">👍まだある</button><select onchange="setDur('${p.id}',this.value)">${opts}</select><button onclick="act('remove','${p.id}')">消す</button></div>`;
+  } else body=`<div class="a">（過去表示中）</div>`;
+  m.bindPopup(`<div class="pop"><div class="t">${c.e} ${p.cat}</div>${p.note?`<div class="n">${esc(p.note)}</div>`:""}<div class="a">${ago(p.created)}投稿・${remainText(p)}・表示${durLabel(durOf(p))}${p.nick?"・"+esc(p.nick):""}</div>${body}</div>`).openPopup();
+}
+function renderList(visible){
+  window._lastVisible=visible;
+  const box=document.getElementById("items");
+  const b=map.getBounds();
+  const inView=visible.filter(p=>b.contains([p.lat,p.lng])).sort((x,y)=>y.created-x.created);
+  if(inView.length===0){box.innerHTML='<div style="text-align:center;color:#aaa;font-size:13px;padding:18px">この範囲に情報はありません<br><span style="font-size:11px">地図を動かすと切り替わります</span></div>';return;}
+  box.innerHTML="";
+  inView.forEach(p=>{
+    const c=catOf(p.cat);
+    const el=document.createElement("div");
+    el.className="item"+(isLive()?"":" past");
+    el.style.borderLeftColor=c.color;
+    const acts=isLive()
+      ?`<div class="acts"><button onclick="panTo(${p.lat},${p.lng})">地図</button><button class="still" onclick="act('bump','${p.id}')">👍まだある</button><button class="rm" onclick="act('remove','${p.id}')">消す</button><span class="life">${remainText(p)}</span></div>`
+      :`<div class="acts"><button onclick="panTo(${p.lat},${p.lng})">地図</button></div>`;
+    el.innerHTML=`<div class="row1"><span style="font-size:17px">${c.e}</span><span class="catname" style="color:${c.color}">${p.cat}</span><span class="when">${ago(p.created)}</span></div>${p.note?`<div class="note">${esc(p.note)}</div>`:""}${acts}`;
+    box.appendChild(el);
+  });
+}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+window.panTo=(lat,lng)=>{map.setView([lat,lng],16,{animate:true});window.scrollTo({top:0,behavior:"smooth"});};
+window.act=async(action,id)=>{
+  await api(action,{id});
+  if(action==="bump"){const p=(window._all||[]).find(x=>x.id===id);showToast(p?("確認OK→ あと"+durLabel(durOf(p))+"に延びました"):"延ばしました");}
+  else if(action==="remove")showToast("消しました");
+  map.closePopup();render();
+};
+window.setDur=async(id,d)=>{await api("setdur",{id,dur:+d});showToast("表示時間を"+durLabel(+d)+"に変更");map.closePopup();render();};
+
+/* ===== 投稿（中心の📍を地図ごと動かして場所を決める） ===== */
+let selCat=null,selDur=null,panelOpen=false;
+const catsBox=document.getElementById("cats"),dursBox=document.getElementById("durs");
+CATS.forEach(c=>{const d=document.createElement("div");d.className="cat";d.innerHTML=`<span class="e">${c.e}</span>${c.key}<span class="def">既定 ${durLabel(c.def)}</span>`;d.onclick=()=>{selCat=c.key;[...catsBox.children].forEach((x,i)=>x.classList.toggle("sel",CATS[i].key===c.key));setDurSel(c.def);};catsBox.appendChild(d);});
+DURS.forEach(m=>{const d=document.createElement("div");d.className="dur";d.textContent=durLabel(m);d.dataset.m=m;d.onclick=()=>setDurSel(m);dursBox.appendChild(d);});
+function setDurSel(m){selDur=m;[...dursBox.children].forEach(x=>x.classList.toggle("sel",+x.dataset.m===m));}
+function updateCoords(){const c=map.getCenter();document.getElementById("pin-coords").textContent="場所："+c.lat.toFixed(5)+", "+c.lng.toFixed(5)+"（地図を動かして調整）";}
+map.on("move",()=>{if(panelOpen)updateCoords();});
+function openPostHere(){
+  if(!isLive()){showToast("投稿はライブに戻してから");return;}
+  panelOpen=true;
+  showCrosshair(true);
+  document.getElementById("panel").style.display="block";
+  updateCoords();
+  document.getElementById("panel").scrollIntoView({behavior:"smooth",block:"nearest"});
+  /* 現在地を出発点に（取れなければ今の中心のまま。あとは地図を動かして調整） */
+  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{map.setView([pos.coords.latitude,pos.coords.longitude],16);updateCoords();},()=>{},{enableHighAccuracy:true,timeout:8000});}
+}
+function cancelPost(){panelOpen=false;showCrosshair(false);document.getElementById("panel").style.display="none";selCat=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));}
+async function submitPost(){
+  if(!selCat){showToast("種類を選んでね");return;}
+  if(!selDur){showToast("表示時間を選んでね");return;}
+  const c=map.getCenter();
+  const note=document.getElementById("note-input").value.trim();
+  let nick="";
+  if(REQUIRE_NICKNAME){nick=document.getElementById("name-input").value.trim();if(!nick){showToast("お名前を入れてね");return;}myNick=nick;lsSet("nago_nick",nick);}
+  await api("add",{cat:selCat,lat:c.lat,lng:c.lng,note,dur:selDur,nick});
+  panelOpen=false;
+  showCrosshair(false);
+  document.getElementById("panel").style.display="none";
+  document.getElementById("note-input").value="";
+  selCat=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));
+  showToast("投稿しました（"+durLabel(selDur)+"表示）");
+  render();
+}
+function saveNickname(){const v=document.getElementById("nickname-input").value.trim();if(!v)return;myNick=v;lsSet("nago_nick",v);document.getElementById("nickname-modal").style.display="none";}
+
+/* ===== 現在地 ===== */
+function locateMe(center){
+  if(!navigator.geolocation){if(center)showToast("位置情報が使えません");return;}
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    if(center)map.setView([lat,lng],16,{animate:true});
+    if(locateMarker)map.removeLayer(locateMarker);
+    const icon=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#4285f4;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>',className:"",iconAnchor:[11,11]});
+    locateMarker=L.marker([lat,lng],{icon,zIndexOffset:1000}).addTo(map);
+  },()=>{if(center)showToast("現在地を取得できませんでした");});
+}
+
+function showToast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display="none",2600);}
+
+/* ===== 起動 ===== */
+map.on("moveend",()=>{if(window._lastVisible)renderList(window._lastVisible);});
+locateMe(true);
+render();
+setInterval(()=>{if(isLive())render();},20000);
+if(REQUIRE_NICKNAME && !myNick) document.getElementById("nickname-modal").style.display="flex";
+</script>
+</body>
+</html>
