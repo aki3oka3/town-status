@@ -63,7 +63,7 @@ body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; co
 .item .acts .still { border-color: #1E7A6B; color: #155c50; font-weight: 700; }
 .item .acts .rm { border-color: #e07070; color: #c0392b; }
 .life { font-size: 11px; color: #999; margin-left: auto; }
-.pinmark { display: flex; align-items: center; justify-content: center; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.4); font-size: 16px; }
+.pinmark { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; border: 3px solid #ccc; box-shadow: 0 1px 4px rgba(0,0,0,.45); font-size: 16px; }
 .leaflet-popup-content { min-width: 180px; }
 .pop .t { font-weight: 700; font-size: 14px; }
 .pop .n { font-size: 13px; color: #444; margin: 4px 0; }
@@ -148,7 +148,7 @@ body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; co
 
 <script>
 /* ===== 設定 ===== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbz9MhQzVvsET3t4GNHWRAaI3qSa9qTdnKQDvjTVrWeAx-O5lRNoh2qWJB7EyFUH16Aq/exec";              /* 本番化：GASのウェブアプリURL（/exec）を入れる */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwRrshhVxYSM7_L3_jjvJiU3gqlDRLU_8_5gTbsjtDuDMWA5UaV33cHRyzibElaR8l3Bg/exec";              /* 本番化：GASのウェブアプリURL（/exec）を入れる */
 const REQUIRE_NICKNAME = false;  /* true でニックネーム必須（荒らし対策が要る時） */
 const GOOGLE_AUTH = false;       /* 後で Google Identity Services を有効化するフック */
 
@@ -161,7 +161,7 @@ function showCrosshair(on){var el=document.getElementById("crosshair"),dt=docume
 
 /* ===== 種類（過去ログの多い順／その他は最後）｜def=既定の表示分（DURSのどれか） ===== */
 const CATS = [
-  {key:"渋滞",        e:"🚥", color:"#E8833A", def:60},
+  {key:"渋滞",        e:"🚗", color:"#E8833A", def:60},
   {key:"安売り",      e:"🏷️", color:"#27A844", def:720},
   {key:"新店・出店",  e:"🆕", color:"#8E44AD", def:1440},
   {key:"停電",        e:"⚡", color:"#F4B400", def:180},
@@ -181,7 +181,10 @@ let myNick=lsGet("nago_nick")||"";
 /* ===== 地図 ===== */
 let map=L.map("map",{zoomControl:false}).setView([26.591,127.977],14);
 L.control.zoom({position:"topleft"}).addTo(map);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+const baseStd=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
+const baseLight=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",{maxZoom:19,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
+baseStd.addTo(map);
+L.control.layers({"標準地図":baseStd,"淡色地図":baseLight},null,{position:"topright"}).addTo(map);
 const pinLayer=L.layerGroup().addTo(map);
 let locateMarker=null;
 
@@ -247,7 +250,7 @@ async function render(){
   const visible=data.filter(p=>aliveAt(p,t));
   visible.forEach(p=>{
     const c=catOf(p.cat),op=freshness(p,t);
-    const icon=L.divIcon({className:"",html:`<div class="pinmark" style="width:32px;height:32px;background:${c.color};opacity:${op}">${c.e}</div>`,iconSize:[32,32],iconAnchor:[16,16]});
+    const icon=L.divIcon({className:"",html:`<div class="pinmark" style="width:32px;height:32px;border-color:${c.color};opacity:${op}">${c.e}</div>`,iconSize:[32,32],iconAnchor:[16,16]});
     const m=L.marker([p.lat,p.lng],{icon}).addTo(pinLayer);
     m.on("click",()=>openPopup(m,p));
   });
