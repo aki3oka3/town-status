@@ -181,15 +181,14 @@ let myNick=lsGet("nago_nick")||"";
 /* ===== 地図 ===== */
 let map=L.map("map",{zoomControl:false}).setView([26.591,127.977],14);
 L.control.zoom({position:"topleft"}).addTo(map);
-const ESRI_SAT="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
-const baseSat=L.tileLayer(ESRI_SAT,{maxZoom:19,attribution:"© Esri"});
+const gsiPhoto=L.tileLayer("https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg",{attribution:"地理院タイル（写真）",maxNativeZoom:18,maxZoom:20});
 const satLabels=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© CARTO"});
-const baseSatLabeled=L.layerGroup([L.tileLayer(ESRI_SAT,{maxZoom:19,attribution:"© Esri"}),satLabels]);
+const baseSatLabeled=L.layerGroup([gsiPhoto,satLabels]);
 const baseVoyager=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
 const baseLight=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
-const baseOsm=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
+const baseOsm=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:20,maxNativeZoom:19,attribution:"© OpenStreetMap"});
 baseSatLabeled.addTo(map);   /* 初期は航空写真＋地名 */
-L.control.layers({"航空写真＋地名":baseSatLabeled,"航空写真":baseSat,"Carto Voyager":baseVoyager,"Carto 淡色":baseLight,"OpenStreetMap":baseOsm},null,{position:"topright"}).addTo(map);
+L.control.layers({"航空写真＋地名":baseSatLabeled,"Carto Voyager":baseVoyager,"Carto 淡色":baseLight,"OpenStreetMap":baseOsm},null,{position:"topright"}).addTo(map);
 const pinLayer=L.layerGroup().addTo(map);
 let locateMarker=null;
 let lastLoc=null;
