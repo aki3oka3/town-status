@@ -127,7 +127,7 @@ body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; co
   <div class="durs" id="durs"></div>
   <div class="form-row">
     <label>ひとこと（任意）</label>
-    <input type="text" id="note-input" placeholder="例：万座の方で打ち上げ中">
+    <input type="text" id="note-input" placeholder="種類を選ぶと例が出ます（任意）">
   </div>
   <div class="form-row" id="name-row" style="display:none">
     <label>お名前（任意）</label>
@@ -161,15 +161,15 @@ function showCrosshair(on){var el=document.getElementById("crosshair"),dt=docume
 
 /* ===== 種類（過去ログの多い順／その他は最後）｜def=既定の表示分（DURSのどれか） ===== */
 const CATS = [
-  {key:"渋滞",        e:"🚗", color:"#E8833A", def:60},
-  {key:"安売り",      e:"🏷️", color:"#27A844", def:720},
-  {key:"新店・出店",  e:"🆕", color:"#8E44AD", def:1440},
-  {key:"停電",        e:"⚡", color:"#F4B400", def:180},
-  {key:"花火",        e:"🎆", color:"#E0457B", def:30},
-  {key:"事故",        e:"⚠️", color:"#E23B3B", def:120},
-  {key:"工事・通行止", e:"🚧", color:"#A07535", def:360},
-  {key:"落とし物・目撃",e:"🔎", color:"#1AA39A", def:720},
-  {key:"その他",      e:"💬", color:"#7A8794", def:120}
+  {key:"渋滞",        e:"🚗", color:"#E8833A", def:60,   ex:"例：58号 北向き のろのろ"},
+  {key:"安売り",      e:"🏷️", color:"#27A844", def:720,  ex:"例：野菜が安い、夕方まで"},
+  {key:"新店・出店",  e:"🆕", color:"#8E44AD", def:1440, ex:"例：キッチンカー来てる"},
+  {key:"停電",        e:"⚡", color:"#F4B400", def:180,  ex:"例：このあたり停電中"},
+  {key:"花火",        e:"🎆", color:"#E0457B", def:30,   ex:"例：美ら海の方で打ち上げ中"},
+  {key:"事故",        e:"⚠️", color:"#E23B3B", def:120,  ex:"例：接触事故、警察が来てる"},
+  {key:"工事・通行止", e:"🚧", color:"#A07535", def:360,  ex:"例：片側通行、誘導員あり"},
+  {key:"落とし物・目撃",e:"🔎", color:"#1AA39A", def:720,  ex:"例：迷い犬、茶色の柴"},
+  {key:"その他",      e:"💬", color:"#7A8794", def:120,  ex:"例：見かけたこと・お知らせ"}
 ];
 const catOf = k => CATS.find(c=>c.key===k) || CATS[CATS.length-1];
 
@@ -297,7 +297,7 @@ window.setDur=async(id,d)=>{await api("setdur",{id,dur:+d});showToast("表示時
 /* ===== 投稿（中心の📍を地図ごと動かして場所を決める） ===== */
 let selCat=null,selDur=null,panelOpen=false;
 const catsBox=document.getElementById("cats"),dursBox=document.getElementById("durs");
-CATS.forEach(c=>{const d=document.createElement("div");d.className="cat";d.innerHTML=`<span class="e">${c.e}</span>${c.key}<span class="def">既定 ${durLabel(c.def)}</span>`;d.onclick=()=>{selCat=c.key;[...catsBox.children].forEach((x,i)=>x.classList.toggle("sel",CATS[i].key===c.key));setDurSel(c.def);};catsBox.appendChild(d);});
+CATS.forEach(c=>{const d=document.createElement("div");d.className="cat";d.innerHTML=`<span class="e">${c.e}</span>${c.key}<span class="def">既定 ${durLabel(c.def)}</span>`;d.onclick=()=>{selCat=c.key;[...catsBox.children].forEach((x,i)=>x.classList.toggle("sel",CATS[i].key===c.key));setDurSel(c.def);document.getElementById("note-input").placeholder=c.ex;};catsBox.appendChild(d);});
 DURS.forEach(m=>{const d=document.createElement("div");d.className="dur";d.textContent=durLabel(m);d.dataset.m=m;d.onclick=()=>setDurSel(m);dursBox.appendChild(d);});
 function setDurSel(m){selDur=m;[...dursBox.children].forEach(x=>x.classList.toggle("sel",+x.dataset.m===m));}
 function updateCoords(){const c=map.getCenter();document.getElementById("pin-coords").textContent="場所："+c.lat.toFixed(5)+", "+c.lng.toFixed(5)+"（地図を動かして調整）";}
@@ -320,7 +320,10 @@ async function submitPost(){
   const note=document.getElementById("note-input").value.trim();
   let nick="";
   if(REQUIRE_NICKNAME){nick=document.getElementById("name-input").value.trim();if(!nick){showToast("お名前を入れてね");return;}myNick=nick;lsSet("nago_nick",nick);}
-  await api("add",{cat:selCat,lat:c.lat,lng:c.lng,note,dur:selDur,nick});
+  let r;
+  try{ r=await api("add",{cat:selCat,lat:c.lat,lng:c.lng,note,dur:selDur,nick}); }
+  catch(e){ showToast("通信エラー: "+e.message); return; }
+  if(r && r.ok===false){ showToast("保存エラー: "+(r.error||"不明")); return; }
   panelOpen=false;
   showCrosshair(false);
   document.getElementById("panel").style.display="none";
