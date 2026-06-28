@@ -181,12 +181,18 @@ let myNick=lsGet("nago_nick")||"";
 /* ===== 地図 ===== */
 let map=L.map("map",{zoomControl:false}).setView([26.591,127.977],14);
 L.control.zoom({position:"topleft"}).addTo(map);
-const baseStd=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
-const baseLight=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",{maxZoom:19,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
-baseStd.addTo(map);
-L.control.layers({"標準地図":baseStd,"淡色地図":baseLight},null,{position:"topright"}).addTo(map);
+const ESRI_SAT="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const baseSat=L.tileLayer(ESRI_SAT,{maxZoom:19,attribution:"© Esri"});
+const satLabels=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© CARTO"});
+const baseSatLabeled=L.layerGroup([L.tileLayer(ESRI_SAT,{maxZoom:19,attribution:"© Esri"}),satLabels]);
+const baseVoyager=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
+const baseLight=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
+const baseOsm=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
+baseSatLabeled.addTo(map);   /* 初期は航空写真＋地名 */
+L.control.layers({"航空写真＋地名":baseSatLabeled,"航空写真":baseSat,"Carto Voyager":baseVoyager,"Carto 淡色":baseLight,"OpenStreetMap":baseOsm},null,{position:"topright"}).addTo(map);
 const pinLayer=L.layerGroup().addTo(map);
 let locateMarker=null;
+let lastLoc=null;
 
 /* ===== データ層（デモ or GAS） ===== */
 let DEMO=!GAS_URL;
@@ -241,29 +247,32 @@ function onSlider(){
 }
 
 /* ===== 描画 ===== */
-async function render(){
-  let data;try{data=await api("list");}catch(e){return;}
-  if(!Array.isArray(data))return;
-  window._all=data;
+function draw(){
+  const data=window._all||[];
   const t=viewTime();
   pinLayer.clearLayers();
   const visible=data.filter(p=>aliveAt(p,t));
   visible.forEach(p=>{
     const c=catOf(p.cat),op=freshness(p,t);
     const icon=L.divIcon({className:"",html:`<div class="pinmark" style="width:32px;height:32px;border-color:${c.color};opacity:${op}">${c.e}</div>`,iconSize:[32,32],iconAnchor:[16,16]});
-    const m=L.marker([p.lat,p.lng],{icon}).addTo(pinLayer);
-    m.on("click",()=>openPopup(m,p));
+    L.marker([p.lat,p.lng],{icon}).addTo(pinLayer).bindPopup(buildPopup(p));
   });
   renderList(visible);
 }
-function openPopup(m,p){
+async function render(){
+  let data;try{data=await api("list");}catch(e){return;}
+  if(!Array.isArray(data))return;
+  window._all=data;
+  draw();
+}
+function buildPopup(p){
   const c=catOf(p.cat);
   let body;
   if(isLive()){
     const opts=DURS.map(d=>`<option value="${d}"${d===durOf(p)?" selected":""}>${durLabel(d)}</option>`).join("");
     body=`<div class="b"><button class="still" onclick="act('bump','${p.id}')">👍まだある</button><select onchange="setDur('${p.id}',this.value)">${opts}</select><button onclick="act('remove','${p.id}')">消す</button></div>`;
   } else body=`<div class="a">（過去表示中）</div>`;
-  m.bindPopup(`<div class="pop"><div class="t">${c.e} ${p.cat}</div>${p.note?`<div class="n">${esc(p.note)}</div>`:""}<div class="a">${ago(p.created)}投稿・${remainText(p)}・表示${durLabel(durOf(p))}${p.nick?"・"+esc(p.nick):""}</div>${body}</div>`).openPopup();
+  return `<div class="pop"><div class="t">${c.e} ${p.cat}</div>${p.note?`<div class="n">${esc(p.note)}</div>`:""}<div class="a">${ago(p.created)}投稿・${remainText(p)}・表示${durLabel(durOf(p))}${p.nick?"・"+esc(p.nick):""}</div>${body}</div>`;
 }
 function renderList(visible){
   window._lastVisible=visible;
@@ -287,12 +296,21 @@ function renderList(visible){
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 window.panTo=(lat,lng)=>{map.setView([lat,lng],16,{animate:true});window.scrollTo({top:0,behavior:"smooth"});};
 window.act=async(action,id)=>{
-  await api(action,{id});
-  if(action==="bump"){const p=(window._all||[]).find(x=>x.id===id);showToast(p?("確認OK→ あと"+durLabel(durOf(p))+"に延びました"):"延ばしました");}
+  if(action==="remove" && !confirm("この投稿を消しますか？")) return;
+  const p=(window._all||[]).find(x=>x.id===id);
+  if(p){ if(action==="remove")p.removed=true; else if(action==="bump")p.bump=Date.now(); }
+  draw(); map.closePopup();                       /* 押した瞬間に反映 */
+  if(action==="bump")showToast(p?("確認OK→ あと"+durLabel(durOf(p))+"に延びました"):"延ばしました");
   else if(action==="remove")showToast("消しました");
-  map.closePopup();render();
+  try{ await api(action,{id}); }catch(e){ showToast("同期エラー: "+e.message); }   /* 送信は裏で */
 };
-window.setDur=async(id,d)=>{await api("setdur",{id,dur:+d});showToast("表示時間を"+durLabel(+d)+"に変更");map.closePopup();render();};
+window.setDur=async(id,d)=>{
+  const p=(window._all||[]).find(x=>x.id===id);
+  if(p)p.dur=+d;
+  draw(); map.closePopup();
+  showToast("表示時間を"+durLabel(+d)+"に変更");
+  try{ await api("setdur",{id,dur:+d}); }catch(e){ showToast("同期エラー: "+e.message); }
+};
 
 /* ===== 投稿（中心の📍を地図ごと動かして場所を決める） ===== */
 let selCat=null,selDur=null,panelOpen=false;
@@ -307,10 +325,11 @@ function openPostHere(){
   panelOpen=true;
   showCrosshair(true);
   document.getElementById("panel").style.display="block";
+  if(lastLoc)map.setView(lastLoc,16);          /* 既知の現在地へすぐ寄せる */
   updateCoords();
   document.getElementById("panel").scrollIntoView({behavior:"smooth",block:"nearest"});
   /* 現在地を出発点に（取れなければ今の中心のまま。あとは地図を動かして調整） */
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{map.setView([pos.coords.latitude,pos.coords.longitude],16);updateCoords();},()=>{},{enableHighAccuracy:true,timeout:8000});}
+  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{const la=pos.coords.latitude,ln=pos.coords.longitude;lastLoc=[la,ln];map.setView([la,ln],16);updateCoords();},()=>{},{enableHighAccuracy:true,timeout:8000});}
 }
 function cancelPost(){panelOpen=false;showCrosshair(false);document.getElementById("panel").style.display="none";selCat=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));}
 async function submitPost(){
@@ -339,11 +358,12 @@ function locateMe(center){
   if(!navigator.geolocation){if(center)showToast("位置情報が使えません");return;}
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    lastLoc=[lat,lng];
     if(center)map.setView([lat,lng],16,{animate:true});
     if(locateMarker)map.removeLayer(locateMarker);
     const icon=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#4285f4;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>',className:"",iconAnchor:[11,11]});
-    locateMarker=L.marker([lat,lng],{icon,zIndexOffset:1000}).addTo(map);
-  },()=>{if(center)showToast("現在地を取得できませんでした");});
+    locateMarker=L.marker([lat,lng],{icon,zIndexOffset:-1000}).addTo(map);
+  },()=>{if(center)showToast("現在地を取得できませんでした");},{enableHighAccuracy:true,timeout:8000,maximumAge:60000});
 }
 
 function showToast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display="none",2600);}
