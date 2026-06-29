@@ -338,17 +338,20 @@ async function submitPost(){
   const note=document.getElementById("note-input").value.trim();
   let nick="";
   if(REQUIRE_NICKNAME){nick=document.getElementById("name-input").value.trim();if(!nick){showToast("お名前を入れてね");return;}myNick=nick;lsSet("nago_nick",nick);}
-  let r;
-  try{ r=await api("add",{cat:selCat,lat:c.lat,lng:c.lng,note,dur:selDur,nick}); }
-  catch(e){ showToast("通信エラー: "+e.message); return; }
-  if(r && r.ok===false){ showToast("保存エラー: "+(r.error||"不明")); return; }
+  const cat=selCat, dur=selDur;
+  /* 押した瞬間に画面をリセット＆ピンを表示（📍も確実に消える） */
+  const temp={id:"tmp"+Date.now(),cat,lat:c.lat,lng:c.lng,note,created:Date.now(),bump:Date.now(),dur,removed:false,nick};
+  (window._all=window._all||[]).push(temp);
   panelOpen=false;
   showCrosshair(false);
   document.getElementById("panel").style.display="none";
   document.getElementById("note-input").value="";
-  selCat=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));
-  showToast("投稿しました（"+durLabel(selDur)+"表示）");
-  render();
+  selCat=null;selDur=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));
+  draw();
+  showToast("投稿しました（"+durLabel(dur)+"表示）");
+  /* 送信は裏で。終わったら本物のデータに同期 */
+  try{ await api("add",{cat,lat:c.lat,lng:c.lng,note,dur,nick}); render(); }
+  catch(e){ showToast("同期エラー: "+e.message); }
 }
 function saveNickname(){const v=document.getElementById("nickname-input").value.trim();if(!v)return;myNick=v;lsSet("nago_nick",v);document.getElementById("nickname-modal").style.display="none";}
 
