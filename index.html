@@ -168,7 +168,7 @@ const CATS = [
   {key:"花火",        e:"🎆", color:"#E0457B", def:30,   ex:"例：美ら海の方で打ち上げ中"},
   {key:"事故",        e:"⚠️", color:"#E23B3B", def:120,  ex:"例：接触事故、警察が来てる"},
   {key:"工事・通行止", e:"🚧", color:"#A07535", def:360,  ex:"例：片側通行、誘導員あり"},
-  {key:"落とし物・目撃",e:"🔎", color:"#1AA39A", def:720,  ex:"例：迷い犬、茶色の柴"},
+  {key:"冠水・災害",  e:"🌊", color:"#2AA9D6", def:240,  ex:"例：道が冠水、通れない"},
   {key:"その他",      e:"💬", color:"#7A8794", def:120,  ex:"例：見かけたこと・お知らせ"}
 ];
 const catOf = k => CATS.find(c=>c.key===k) || CATS[CATS.length-1];
@@ -271,7 +271,7 @@ function buildPopup(p){
     const opts=DURS.map(d=>`<option value="${d}"${d===durOf(p)?" selected":""}>${durLabel(d)}</option>`).join("");
     body=`<div class="b"><button class="still" onclick="act('bump','${p.id}')">👍まだある</button><select onchange="setDur('${p.id}',this.value)">${opts}</select><button onclick="act('remove','${p.id}')">消す</button></div>`;
   } else body=`<div class="a">（過去表示中）</div>`;
-  return `<div class="pop"><div class="t">${c.e} ${p.cat}</div>${p.note?`<div class="n">${esc(p.note)}</div>`:""}<div class="a">${ago(p.created)}投稿・${remainText(p)}・表示${durLabel(durOf(p))}${p.nick?"・"+esc(p.nick):""}</div>${body}</div>`;
+  return `<div class="pop"><div class="t">${c.e} ${p.cat}</div>${p.note?`<div class="n">${esc(p.note)}</div>`:""}<div class="a">${ago(p.created)}投稿・${remainText(p)}・表示${durLabel(durOf(p))}</div>${body}</div>`;
 }
 function renderList(visible){
   window._lastVisible=visible;
@@ -374,7 +374,7 @@ function showToast(m){const t=document.getElementById("toast");t.textContent=m;t
 map.on("moveend",()=>{if(window._lastVisible)renderList(window._lastVisible);});
 locateMe(true);
 render();
-setInterval(()=>{if(isLive())render();},20000);
+setInterval(()=>{if(isLive() && !document.querySelector(".leaflet-popup"))render();},20000);
 if(REQUIRE_NICKNAME && !myNick) document.getElementById("nickname-modal").style.display="flex";
 </script>
 </body>
