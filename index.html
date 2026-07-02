@@ -148,7 +148,7 @@ body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; co
 
 <script>
 /* ===== 設定 ===== */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwRrshhVxYSM7_L3_jjvJiU3gqlDRLU_8_5gTbsjtDuDMWA5UaV33cHRyzibElaR8l3Bg/exec";              /* 本番化：GASのウェブアプリURL（/exec）を入れる */
+const GAS_URL = "";              /* 本番化：GASのウェブアプリURL（/exec）を入れる */
 const REQUIRE_NICKNAME = false;  /* true でニックネーム必須（荒らし対策が要る時） */
 const GOOGLE_AUTH = false;       /* 後で Google Identity Services を有効化するフック */
 
@@ -163,6 +163,7 @@ function showCrosshair(on){var el=document.getElementById("crosshair"),dt=docume
 const CATS = [
   {key:"渋滞",        e:"🚗", color:"#E8833A", def:60,   ex:"例：58号 北向き のろのろ"},
   {key:"安売り",      e:"🏷️", color:"#27A844", def:720,  ex:"例：野菜が安い、夕方まで"},
+  {key:"祭り・イベント",e:"🥁", color:"#1AA39A", def:180,  ex:"例：道ジュネーが通ってる"},
   {key:"新店・出店",  e:"🆕", color:"#8E44AD", def:1440, ex:"例：キッチンカー来てる"},
   {key:"停電",        e:"⚡", color:"#F4B400", def:180,  ex:"例：このあたり停電中"},
   {key:"花火",        e:"🎆", color:"#E0457B", def:30,   ex:"例：美ら海の方で打ち上げ中"},
