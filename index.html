@@ -347,11 +347,9 @@ function openPostHere(){
   panelOpen=true;
   showCrosshair(true);
   document.getElementById("panel").style.display="block";
-  if(lastLoc)map.setView(lastLoc,16);          /* 既知の現在地へすぐ寄せる */
+  /* 今見ている地図の中心が投稿位置。動かして調整もできる */
   updateCoords();
   document.getElementById("panel").scrollIntoView({behavior:"smooth",block:"nearest"});
-  /* 現在地を出発点に（取れなければ今の中心のまま。あとは地図を動かして調整） */
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{const la=pos.coords.latitude,ln=pos.coords.longitude;lastLoc=[la,ln];map.setView([la,ln],16);updateCoords();},()=>{});}
 }
 function cancelPost(){panelOpen=false;showCrosshair(false);document.getElementById("panel").style.display="none";selCat=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));}
 async function submitPost(){
