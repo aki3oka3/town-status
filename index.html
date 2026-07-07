@@ -110,7 +110,7 @@ body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; co
   <button id="post-fab" onclick="openPostHere()">＋ 今を投稿</button>
   <button id="back-toggle" onclick="toggleBack()">🕒 さかのぼる</button>
   <div id="time-wrap">
-    <input type="range" id="time-slider" min="0" max="1440" step="10" value="0" oninput="onSlider()">
+    <input type="range" id="time-slider" min="0" max="4320" step="30" value="0" oninput="onSlider()">
     <span id="time-label">いま（ライブ）</span>
   </div>
 </div>
@@ -242,11 +242,20 @@ function toggleBack(){
   const w=document.getElementById("time-wrap"),b=document.getElementById("back-toggle");
   const on=!w.classList.contains("on");
   w.classList.toggle("on",on);b.classList.toggle("on",on);
-  if(!on){document.getElementById("time-slider").value=0;onSlider();}
+  if(!on){document.getElementById("time-slider").value=0;}
+  onSlider();
+}
+function backLabel(min){
+  if(min<60)return min+"分前";
+  const h=Math.floor(min/60),m=min%60;
+  if(h<24)return h+"時間"+(m?m+"分":"")+"前";
+  const d=Math.floor(h/24),hh=h%24;
+  return d+"日"+(hh?"と"+hh+"時間":"")+"前";
 }
 function onSlider(){
   viewBackMin=+document.getElementById("time-slider").value;
-  document.getElementById("time-label").textContent=isLive()?"いま（ライブ）":(viewBackMin<60?viewBackMin+"分前":Math.floor(viewBackMin/60)+"時間"+(viewBackMin%60?(viewBackMin%60)+"分":"")+"前");
+  document.getElementById("time-label").textContent=isLive()?"いま（ライブ）":backLabel(viewBackMin);
+  document.getElementById("back-toggle").innerHTML=isLive()?"🕒 さかのぼる":"⏪ いまに戻る";
   document.getElementById("post-fab").style.opacity=isLive()?1:.4;
   document.getElementById("map-hint").textContent=isLive()?HINT_VIEW:"🕒 過去のようすを表示中（投稿はライブに戻してから）";
   document.getElementById("list-title").textContent=isLive()?"いま出ている情報":"この時刻に出ていた情報";
