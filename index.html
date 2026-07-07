@@ -22,40 +22,40 @@ if (typeof L === 'undefined') {
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; color: #222; }
-#header { background: #1E7A6B; color: #fff; padding: 10px 16px; }
+#header { background: #0e6e8c; color: #fff; padding: 10px 16px; }
 #header h1 { font-size: 16px; font-weight: 700; }
 #header .sub { font-size: 11px; opacity: .9; }
 #toolbar { display: flex; gap: 8px; align-items: center; padding: 8px 16px; background: #fff; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; }
-#post-fab { background: #1E7A6B; color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
+#post-fab { background: #0e6e8c; color: #fff; border: none; border-radius: 8px; padding: 9px 14px; font-size: 14px; font-weight: 700; cursor: pointer; }
 #back-toggle { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 8px 11px; font-size: 13px; cursor: pointer; color: #555; }
 #back-toggle.on { background: #fff3e0; border-color: #f0a030; color: #8a5a12; }
 #time-wrap { display: none; align-items: center; gap: 8px; width: 100%; padding-top: 4px; }
 #time-wrap.on { display: flex; }
 #time-slider { flex: 1; }
 #time-label { font-size: 12px; color: #8a5a12; font-weight: 700; min-width: 86px; text-align: right; }
-#map-hint { background: #e7f4f1; border-bottom: 2px solid #8fcabd; padding: 9px 16px; font-size: 13px; font-weight: 700; color: #155c50; text-align: center; }
+#map-hint { background: #e6f2f7; border-bottom: 2px solid #8fcabd; padding: 9px 16px; font-size: 13px; font-weight: 700; color: #0a5069; text-align: center; }
 #map-wrap { position: relative; }
 #map { width: 100%; height: 56vh; min-height: 320px; }
 #crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-100%); font-size: 30px; z-index: 800; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); display: none; }
-#center-dot { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #1E7A6B; border: 2px solid #fff; z-index: 800; pointer-events: none; display: none; }
-#locate-btn { position: absolute; bottom: 24px; right: 12px; z-index: 1000; width: 40px; height: 40px; background: #fff; border: 2px solid #bbb; border-radius: 10px; font-size: 19px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
-#panel { background: #fff; padding: 14px 16px; border-top: 3px solid #1E7A6B; display: none; }
+#center-dot { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #0e6e8c; border: 2px solid #fff; z-index: 800; pointer-events: none; display: none; }
+#locate-btn { position: absolute; bottom: 10px; right: 10px; z-index: 1000; width: 36px; height: 36px; background: #fff; border: 2px solid #bbb; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+#panel { background: #fff; padding: 14px 16px; border-top: 3px solid #0e6e8c; display: none; }
 #panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-.pin-coords { font-size: 12px; color: #155c50; margin-bottom: 10px; background: #e7f4f1; padding: 6px 10px; border-radius: 6px; font-weight: 600; }
+.pin-coords { font-size: 12px; color: #0a5069; margin-bottom: 10px; background: #e6f2f7; padding: 6px 10px; border-radius: 6px; font-weight: 600; }
 .cats { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 12px; }
 .cat { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 3px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer; font-size: 11px; color: #666; user-select: none; }
 .cat .e { font-size: 21px; line-height: 1.1; }
 .cat .def { font-size: 10px; color: #aaa; }
-.cat.sel { border-color: #1E7A6B; background: #e7f4f1; color: #155c50; font-weight: 700; }
+.cat.sel { border-color: #0e6e8c; background: #e6f2f7; color: #0a5069; font-weight: 700; }
 .cat.sel .def { color: #2a8b78; }
 .form-row { margin-bottom: 10px; }
 .form-row label { display: block; font-size: 12px; color: #555; margin-bottom: 5px; font-weight: 600; }
 .form-row input { width: 100%; padding: 9px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
 .durs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .dur { padding: 6px 11px; border: 1.5px solid #e0e0e0; border-radius: 16px; font-size: 12px; color: #666; cursor: pointer; background: #fff; user-select: none; }
-.dur.sel { border-color: #1E7A6B; background: #e7f4f1; color: #155c50; font-weight: 700; }
+.dur.sel { border-color: #0e6e8c; background: #e6f2f7; color: #0a5069; font-weight: 700; }
 .btn-row { display: flex; gap: 8px; margin-top: 4px; }
-#submit-btn { flex: 3; padding: 12px; background: #1E7A6B; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+#submit-btn { flex: 3; padding: 12px; background: #0e6e8c; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
 #cancel-btn { flex: 1; padding: 12px; background: #fff; color: #888; border: 1px solid #ddd; border-radius: 8px; font-size: 13px; cursor: pointer; }
 #status-list { padding: 10px 16px 24px; background: #fafafa; }
 #status-list h2 { font-size: 13px; font-weight: 700; color: #555; margin-bottom: 8px; }
@@ -67,7 +67,7 @@ body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; co
 .item .note { font-size: 13px; color: #444; margin: 3px 0 7px; }
 .item .acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .item .acts button { font-size: 11px; padding: 5px 9px; border-radius: 6px; border: 1px solid #ddd; background: #fff; cursor: pointer; color: #555; }
-.item .acts .still { border-color: #1E7A6B; color: #155c50; font-weight: 700; }
+.item .acts .still { border-color: #0e6e8c; color: #0a5069; font-weight: 700; }
 .item .acts .rm { border-color: #e07070; color: #c0392b; }
 .life { font-size: 11px; color: #999; margin-left: auto; }
 .pinmark { display: flex; align-items: center; justify-content: center; border-radius: 50%; background: #fff; border: 3px solid #ccc; box-shadow: 0 1px 4px rgba(0,0,0,.45); font-size: 16px; }
@@ -77,16 +77,18 @@ body { font-family: 'Hiragino Sans','Meiryo',sans-serif; background: #f5f5f0; co
 .pop .a { font-size: 11px; color: #999; margin: 4px 0 8px; }
 .pop .b { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .pop .b button { font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
-.pop .b .still { border-color: #1E7A6B; color: #155c50; font-weight: 700; }
+.pop .b .still { border-color: #0e6e8c; color: #0a5069; font-weight: 700; }
 .pop select { font-size: 12px; padding: 5px; border-radius: 6px; border: 1px solid #ddd; }
-#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; display: none; z-index: 9999; }
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; display: none; z-index: 9999; white-space: nowrap; }
 #demo-note { font-size: 11px; color: #8a5a12; background: #faefd8; border: 1px solid #ead9b0; border-radius: 8px; padding: 6px 10px; margin: 8px 16px 0; display: none; }
 #nickname-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2000; display: none; align-items: center; justify-content: center; }
 #nickname-box { background: #fff; border-radius: 12px; padding: 22px 20px; width: 300px; max-width: 90vw; }
 #nickname-box h2 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
 #nickname-box p { font-size: 12px; color: #888; margin-bottom: 14px; line-height: 1.6; }
 #nickname-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; margin-bottom: 12px; }
-#nickname-save { width: 100%; padding: 11px; background: #1E7A6B; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+#nickname-save { width: 100%; padding: 11px; background: #0e6e8c; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+.loc-pop .leaflet-popup-content{margin:6px 12px;font-size:13px;white-space:nowrap;min-width:0!important;width:auto!important}
+.loc-pop .leaflet-popup-content-wrapper{border-radius:14px}
 </style>
 </head>
 <body>
@@ -195,8 +197,12 @@ const baseSatLabeled=L.layerGroup([gsiPhoto,satLabels]);
 const baseVoyager=L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
 const baseLight=L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",{maxZoom:20,subdomains:"abcd",attribution:"© OpenStreetMap, © CARTO"});
 const baseOsm=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:20,maxNativeZoom:19,attribution:"© OpenStreetMap"});
-baseSatLabeled.addTo(map);   /* 初期は航空写真＋地名 */
-L.control.layers({"航空写真＋地名":baseSatLabeled,"Carto Voyager":baseVoyager,"Carto 淡色":baseLight,"OpenStreetMap":baseOsm},null,{position:"topright"}).addTo(map);
+const baseLayers={"航空写真＋地名":baseSatLabeled,"Carto Voyager":baseVoyager,"Carto 淡色":baseLight,"OpenStreetMap":baseOsm};
+/* 前回選んだレイヤーを復元（なければ航空写真＋地名） */
+const savedLayer=localStorage.getItem("town_baselayer");
+(baseLayers[savedLayer]||baseSatLabeled).addTo(map);
+L.control.layers(baseLayers,null,{position:"topright"}).addTo(map);
+map.on("baselayerchange",e=>localStorage.setItem("town_baselayer",e.name));
 const pinLayer=L.layerGroup().addTo(map);
 let locateMarker=null;
 let lastLoc=null;
@@ -345,7 +351,7 @@ function openPostHere(){
   updateCoords();
   document.getElementById("panel").scrollIntoView({behavior:"smooth",block:"nearest"});
   /* 現在地を出発点に（取れなければ今の中心のまま。あとは地図を動かして調整） */
-  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{const la=pos.coords.latitude,ln=pos.coords.longitude;lastLoc=[la,ln];map.setView([la,ln],16);updateCoords();},()=>{},{enableHighAccuracy:true,timeout:8000});}
+  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{const la=pos.coords.latitude,ln=pos.coords.longitude;lastLoc=[la,ln];map.setView([la,ln],16);updateCoords();},()=>{});}
 }
 function cancelPost(){panelOpen=false;showCrosshair(false);document.getElementById("panel").style.display="none";selCat=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));}
 async function submitPost(){
@@ -380,9 +386,10 @@ function locateMe(center){
     lastLoc=[lat,lng];
     if(center)map.setView([lat,lng],16,{animate:true});
     if(locateMarker)map.removeLayer(locateMarker);
-    const icon=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#4285f4;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>',className:"",iconAnchor:[11,11]});
-    locateMarker=L.marker([lat,lng],{icon,zIndexOffset:-1000}).addTo(map);
-  },()=>{if(center)showToast("現在地を取得できませんでした");},{enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+    const icon=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#4285f4;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>',className:"",iconAnchor:[8,8]});
+    locateMarker=L.marker([lat,lng],{icon,zIndexOffset:-1000}).addTo(map).bindPopup("🔵 現在地",{minWidth:0,closeButton:false,className:"loc-pop"});
+    if(center)locateMarker.openPopup();
+  },()=>{if(center)showToast("現在地を取得できませんでした");});
 }
 
 function showToast(m){const t=document.getElementById("toast");t.textContent=m;t.style.display="block";clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.display="none",2600);}
