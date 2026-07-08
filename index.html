@@ -40,9 +40,12 @@ body.posting #map { height: 35vh; min-height: 220px; }
 #crosshair { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-100%); font-size: 30px; z-index: 800; pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); display: none; }
 #center-dot { position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: #0e6e8c; border: 2px solid #fff; z-index: 800; pointer-events: none; display: none; }
 #locate-btn { position: absolute; bottom: 10px; right: 10px; z-index: 1000; width: 36px; height: 36px; background: #fff; border: 2px solid #bbb; border-radius: 8px; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
-#panel { background: #fff; padding: 14px 16px; border-top: 3px solid #0e6e8c; display: none; }
+#panel { display: none; position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%; max-width: 640px; z-index: 1500; background: #fff; padding: 12px 16px 16px; border-top: 3px solid #0e6e8c; border-radius: 14px 14px 0 0; max-height: 45vh; overflow-y: auto; box-shadow: 0 -4px 18px rgba(0,0,0,.25); }
 #panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
-.pin-coords { font-size: 12px; color: #0a5069; margin-bottom: 10px; background: #e6f2f7; padding: 6px 10px; border-radius: 6px; font-weight: 600; }
+.pin-coords-row { display: flex; gap: 8px; align-items: stretch; margin-bottom: 10px; }
+.pin-coords { flex: 1; font-size: 12px; color: #0a5069; background: #e6f2f7; padding: 6px 10px; border-radius: 6px; font-weight: 600; margin-bottom: 0; }
+.goto-loc-btn { flex-shrink: 0; font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid #0e6e8c; background: #fff; color: #0e6e8c; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.goto-loc-btn:active { background: #e6f2f7; }
 .cats { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; margin-bottom: 12px; }
 .cat { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 3px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer; font-size: 11px; color: #666; user-select: none; }
 .cat .e { font-size: 21px; line-height: 1.1; }
@@ -88,6 +91,19 @@ body.posting #map { height: 35vh; min-height: 220px; }
 #nickname-box p { font-size: 12px; color: #888; margin-bottom: 14px; line-height: 1.6; }
 #nickname-input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; margin-bottom: 12px; }
 #nickname-save { width: 100%; padding: 11px; background: #0e6e8c; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+/* 使い方ガイド */
+#header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+#help-btn { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.7); background: transparent; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; line-height: 1; }
+#help-btn:active { background: rgba(255,255,255,.2); }
+#guide-modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 2100; display: none; align-items: center; justify-content: center; }
+#guide-box { background: #fff; border-radius: 14px; padding: 20px 18px; width: 340px; max-width: 92vw; max-height: 82vh; overflow-y: auto; }
+#guide-box h2 { font-size: 16px; font-weight: 700; margin-bottom: 4px; color: #0e6e8c; }
+#guide-box .g-sub { font-size: 12px; color: #888; margin-bottom: 14px; line-height: 1.6; }
+.g-step { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-start; }
+.g-step .g-icon { flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; background: #e6f2f7; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+.g-step .g-text { font-size: 13px; line-height: 1.65; color: #333; }
+.g-step .g-text b { color: #0a5069; }
+#guide-close { width: 100%; padding: 11px; margin-top: 6px; background: #0e6e8c; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
 .loc-pop .leaflet-popup-content{margin:6px 12px;font-size:13px;white-space:nowrap;min-width:0!important;width:auto!important}
 .loc-pop .leaflet-popup-content-wrapper{border-radius:14px}
 </style>
@@ -95,6 +111,34 @@ body.posting #map { height: 35vh; min-height: 220px; }
 <body>
 
 <!-- 後で有効化：ニックネーム/Google認証（今は REQUIRE_NICKNAME=false なので非表示） -->
+<div id="guide-modal">
+  <div id="guide-box">
+    <h2>📍 まちのいま の使い方</h2>
+    <div class="g-sub">「今起きていること」をみんなで地図に残すアプリです。時間がたつと情報は自然に消えます。</div>
+    <div class="g-step">
+      <div class="g-icon">👀</div>
+      <div class="g-text"><b>見る</b><br>地図のピンをタップすると詳細が見られます。<br>「<b>👍まだある</b>」＝まだ続いていると知らせて表示を延長、「<b>消す</b>」＝終わった情報を消す。みんなで情報を新鮮に保てます。</div>
+    </div>
+    <div class="g-step">
+      <div class="g-icon">🗺</div>
+      <div class="g-text"><b>投稿する（かんたん3ステップ）</b><br>① 地図を動かして、知らせたい場所を画面の真ん中に<br>② 「<b>＋今を投稿</b>」を押す<br>③ 種類と表示時間を選んで「この内容で出す」<br><span style="color:#888">※ パネルが開いていても地図を動かして微調整できます。中心の印が投稿場所です。</span></div>
+    </div>
+    <div class="g-step">
+      <div class="g-icon">📍</div>
+      <div class="g-text"><b>現在地</b><br>地図右下の📍ボタンで現在地に移動します。青い丸●が今いる場所です。</div>
+    </div>
+    <div class="g-step">
+      <div class="g-icon">🕒</div>
+      <div class="g-text"><b>さかのぼる</b><br>スライダーで最大3日前まで、過去の様子を振り返れます。</div>
+    </div>
+    <div class="g-step">
+      <div class="g-icon">😊</div>
+      <div class="g-text"><b>安心して使ってね</b><br>登録不要・無料。投稿時のニックネームも本名不要です。</div>
+    </div>
+    <button id="guide-close" onclick="closeGuide()">はじめる</button>
+  </div>
+</div>
+
 <div id="nickname-modal">
   <div id="nickname-box">
     <h2>📛 お名前（任意）</h2>
@@ -105,8 +149,11 @@ body.posting #map { height: 35vh; min-height: 220px; }
 </div>
 
 <div id="header">
-  <h1>📍 まちのいま</h1>
-  <div class="sub">今この瞬間だけの地図。古い情報は自然に消えます。</div>
+  <div>
+    <h1>📍 まちのいま</h1>
+    <div class="sub">今この瞬間だけの地図。古い情報は自然に消えます。</div>
+  </div>
+  <button id="help-btn" onclick="showGuide()" title="使い方">？</button>
 </div>
 
 <div id="toolbar">
@@ -130,7 +177,10 @@ body.posting #map { height: 35vh; min-height: 220px; }
 
 <div id="panel">
   <h2>📍 今を投稿する</h2>
-  <div class="pin-coords" id="pin-coords">場所：地図の中心（動かして合わせてね）</div>
+  <div class="pin-coords-row">
+    <div class="pin-coords" id="pin-coords">場所：地図の中心（動かして合わせてね）</div>
+    <button class="goto-loc-btn" onclick="locateMe(true,true)">📍 現在地へ</button>
+  </div>
   <div class="form-row"><label>何が起きてる？</label></div>
   <div class="cats" id="cats"></div>
   <div class="form-row"><label>表示時間（種類で既定が入ります・変えられます）</label></div>
@@ -159,7 +209,7 @@ body.posting #map { height: 35vh; min-height: 220px; }
 <script>
 /* ===== 設定 ===== */
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwRrshhVxYSM7_L3_jjvJiU3gqlDRLU_8_5gTbsjtDuDMWA5UaV33cHRyzibElaR8l3Bg/exec";              /* 本番化：GASのウェブアプリURL（/exec）を入れる */
-const REQUIRE_NICKNAME = false;  /* true でニックネーム必須（荒らし対策が要る時） */
+const REQUIRE_NICKNAME = true;   /* ニックネーム必須（初回モーダルで登録・記憶） */
 const GOOGLE_AUTH = false;       /* 後で Google Identity Services を有効化するフック */
 
 /* ===== 表示時間の選択肢 ===== */
@@ -343,14 +393,25 @@ DURS.forEach(m=>{const d=document.createElement("div");d.className="dur";d.textC
 function setDurSel(m){selDur=m;[...dursBox.children].forEach(x=>x.classList.toggle("sel",+x.dataset.m===m));}
 function updateCoords(){const c=map.getCenter();document.getElementById("pin-coords").textContent="場所："+c.lat.toFixed(5)+", "+c.lng.toFixed(5)+"（地図を動かして調整）";}
 map.on("move",()=>{if(panelOpen)updateCoords();});
+function showGuide(){document.getElementById("guide-modal").style.display="flex";}
+function closeGuide(){
+  document.getElementById("guide-modal").style.display="none";
+  try{localStorage.setItem("town_guide_seen","1");}catch(e){}
+  if(REQUIRE_NICKNAME && !myNick)document.getElementById("nickname-modal").style.display="flex";
+}
+/* 初回だけ自動表示 */
+(function(){
+  let seen="";
+  try{seen=localStorage.getItem("town_guide_seen");}catch(e){}
+  if(!seen)setTimeout(showGuide,600);
+})();
 function openPostHere(){
   if(!isLive()){showToast("投稿はライブに戻してから");return;}
   panelOpen=true;
   showCrosshair(true);
   document.getElementById("panel").style.display="block";
-  /* 今見ている地図の中心が投稿位置。動かして調整もできる */
+  /* 今見ている地図の中心が投稿位置。パネルは下に浮くので地図を見ながら微調整できる */
   updateCoords();
-  document.getElementById("panel").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 function cancelPost(){panelOpen=false;showCrosshair(false);document.getElementById("panel").style.display="none";selCat=null;[...catsBox.children].forEach(x=>x.classList.remove("sel"));}
 async function submitPost(){
@@ -359,7 +420,7 @@ async function submitPost(){
   const c=map.getCenter();
   const note=document.getElementById("note-input").value.trim();
   let nick="";
-  if(REQUIRE_NICKNAME){nick=document.getElementById("name-input").value.trim();if(!nick){showToast("お名前を入れてね");return;}myNick=nick;lsSet("nago_nick",nick);}
+  if(REQUIRE_NICKNAME){if(!myNick){document.getElementById("nickname-modal").style.display="flex";return;}nick=myNick;}
   const cat=selCat, dur=selDur;
   /* 押した瞬間に画面をリセット＆ピンを表示（📍も確実に消える） */
   const temp={id:"tmp"+Date.now(),cat,lat:c.lat,lng:c.lng,note,created:Date.now(),bump:Date.now(),dur,removed:false,nick};
@@ -378,12 +439,12 @@ async function submitPost(){
 function saveNickname(){const v=document.getElementById("nickname-input").value.trim();if(!v)return;myNick=v;lsSet("nago_nick",v);document.getElementById("nickname-modal").style.display="none";}
 
 /* ===== 現在地 ===== */
-function locateMe(center){
+function locateMe(center,keepZoom){
   if(!navigator.geolocation){if(center)showToast("位置情報が使えません");return;}
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude,lng=pos.coords.longitude;
     lastLoc=[lat,lng];
-    if(center)map.setView([lat,lng],16,{animate:true});
+    if(center)map.setView([lat,lng],keepZoom?map.getZoom():16,{animate:true});
     if(locateMarker)map.removeLayer(locateMarker);
     const icon=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:#4285f4;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>',className:"",iconAnchor:[8,8]});
     locateMarker=L.marker([lat,lng],{icon,zIndexOffset:-1000}).addTo(map).bindPopup("🔵 現在地",{minWidth:0,closeButton:false,className:"loc-pop"});
@@ -398,7 +459,10 @@ map.on("moveend",()=>{if(window._lastVisible)renderList(window._lastVisible);});
 locateMe(true);
 render();
 setInterval(()=>{if(isLive() && !document.querySelector(".leaflet-popup"))render();},20000);
-if(REQUIRE_NICKNAME && !myNick) document.getElementById("nickname-modal").style.display="flex";
+(function(){
+  let gs="";try{gs=localStorage.getItem("town_guide_seen");}catch(e){}
+  if(REQUIRE_NICKNAME && !myNick && gs) document.getElementById("nickname-modal").style.display="flex";
+})();
 </script>
 </body>
 </html>
