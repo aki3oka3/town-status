@@ -171,6 +171,7 @@ body.posting #map { height: 35vh; min-height: 220px; }
 <div id="demo-note">デモ表示中（保存されません）。本番化は、コード冒頭の <b>GAS_URL</b> にGASのURLを入れてください。</div>
 <div id="map-hint">ピンをタップで詳細　／　「＋今を投稿」で今を知らせる</div>
 <div id="cat-bar">
+  <span class="cat-chip" id="chip-all" onclick="selectAllCats()">✅ すべて</span>
   <span class="cat-chip" data-cat="渋滞" onclick="toggleCat('渋滞',this)">🚗 渋滞</span>
   <span class="cat-chip" data-cat="安売り" onclick="toggleCat('安売り',this)">🏷️ 安売り</span>
   <span class="cat-chip" data-cat="祭り・イベント" onclick="toggleCat('祭り・イベント',this)">🥁 祭り・イベント</span>
@@ -340,26 +341,47 @@ function onSlider(){
 
 /* ===== 描画 ===== */
 /* カテゴリ絞り込み（災害マップと同方式・起動時すべてオン） */
-let selectedCats = new Set(CATS.map(x=>x.key));
-function toggleCat(cat, el) {
-  const meta = catOf(cat);
-  if(selectedCats.has(cat)) {
-    selectedCats.delete(cat);
-    el.style.background='#fff'; el.style.borderColor='#ddd'; el.style.color='#666';
-  } else {
-    selectedCats.add(cat);
-    el.style.background=meta.color; el.style.borderColor=meta.color; el.style.color='#fff';
+const ALL_CATS = CATS.map(x=>x.key);
+let selectedCats = new Set(ALL_CATS);
+let allMode = true;
+function paintChips() {
+  const allEl = document.getElementById('chip-all');
+  if(allEl) {
+    allEl.style.background = allMode ? '#333' : '#fff';
+    allEl.style.borderColor = allMode ? '#333' : '#ddd';
+    allEl.style.color = allMode ? '#fff' : '#666';
   }
+  document.querySelectorAll('.cat-chip[data-cat]').forEach(function(el) {
+    const cat = el.getAttribute('data-cat');
+    const meta = catOf(cat);
+    const on = selectedCats.has(cat);
+    el.style.background = on ? meta.color : '#fff';
+    el.style.borderColor = on ? meta.color : '#ddd';
+    el.style.color = on ? '#fff' : '#666';
+  });
+}
+function selectAllCats() {
+  allMode = true;
+  selectedCats = new Set(ALL_CATS);
+  paintChips();
   draw();
 }
-/* 起動時はすべてのカテゴリをON（チップを点灯） */
-document.querySelectorAll('.cat-chip').forEach(function(el) {
-  const cat = el.getAttribute('data-cat');
-  const meta = catOf(cat);
-  el.style.background = meta.color;
-  el.style.borderColor = meta.color;
-  el.style.color = '#fff';
-});
+function toggleCat(cat, el) {
+  if(allMode) {
+    allMode = false;
+    selectedCats = new Set([cat]);
+  } else if(selectedCats.has(cat)) {
+    selectedCats.delete(cat);
+    if(selectedCats.size === 0) { allMode = true; selectedCats = new Set(ALL_CATS); }
+  } else {
+    selectedCats.add(cat);
+    if(selectedCats.size === ALL_CATS.length) allMode = true;
+  }
+  paintChips();
+  draw();
+}
+/* 起動時はすべてのカテゴリをON */
+paintChips();
 function draw(){
   const data=window._all||[];
   const t=viewTime();
